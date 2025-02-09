@@ -1,0 +1,28 @@
+services:
+  db:
+    image: "yourapp-db:latest"
+    build:
+      context: "infra/pg"
+      dockerfile: "Dockerfile"
+    container_name: yourapp-db
+    ports:
+      - "5432:5432"
+    restart: always
+    environment:
+      - "POSTGRES_PASSWORD=secretpassword"
+  app:
+    image: "yourapp:latest"
+    build:
+      context: "."
+      dockerfile: "infra/app/Dockerfile"
+    container_name: yourapp
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    restart: always
+    environment:
+      # This is the connection URL for the app to connect to the database
+      - "DBURL=postgres://postgres:secretpassword@yourapp-db:5432/postgres"
+      # This key will be used to validate integrity of the session and CSRF cookie values.
+      - "SESSION_HASHKEY=deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"

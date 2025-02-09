@@ -1,0 +1,46 @@
+package templates
+
+import "fmt"
+
+css formTable() {
+	width: 100%;
+}
+
+templ FormTable() {
+	<table class={formTable}>
+	{children...}
+	</table>
+}
+
+templ FormLine() {
+	<tr>{children...}</tr>
+}
+
+templ FormItem() {
+	<td>{children...}</td>
+}
+
+templ FormItemLabel(itemFor string, label string) {
+	@FormItem() {
+		<label for={itemFor}>{label}</label>
+	}
+}
+
+templ FormItemCols(colspan int) {
+	<td colspan={colspanToString(colspan)}>{children...}</td>
+}
+
+func colspanToString(colspan int) string {
+	return fmt.Sprintf("%d", colspan)
+}
+
+css buttonGroup() {
+	width: 100%;
+	display: flex;
+	flex-direction: row-reverse;
+	align-items: center;
+}
+
+templ ButtonGroup() {
+	<div class={buttonGroup}>{children...}</div>
+}

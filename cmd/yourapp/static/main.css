@@ -1,0 +1,142 @@
+* {
+    box-sizing: border-box;
+    user-select: none;
+}
+
+/* All variables should go here */
+:root {
+    --font-size: 29px;
+    --panel-header-color: #BBDEFB;
+    --border-color: #88C7FB;
+    --default-spc: 16px;
+    --fg-color: #333;
+    --overlay-color: #E6EFF27f;
+    --bg-color: #E6EFF2;
+    --titlebar-height: 64px;
+    --bg-input: #D0E8FB;
+}
+
+html, body {
+    font-size: var(--font-size);
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--fg-color);
+}
+
+button, input[type="submit"] {
+    cursor: pointer;
+    border-radius: 8px;
+    background-color: var(--panel-header-color);
+    border: 5px var(--border-color) solid;
+    padding: var(--default-spc) 24px;
+}
+
+button:active, input[type="submit"]:active {
+    background-color: var(--border-color);
+    border: 5px var(--panel-header-color) solid;
+}
+
+input, button {
+    font-size: var(--font-size);
+}
+
+input[type="text"], input[type="password"] {
+    background-color: var(--bg-input);
+    color: var(--fg-color);
+    border: 2px var(--panel-header-color) solid;
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+
+label {
+    font-size: var(--font-size);
+}
+
+a, a:visited {
+    color: var(--fg-color);
+    cursor: pointer;
+}
+
+/* semantic classes */
+
+.panel-header {
+    background-color: var(--panel-header-color);
+    border-bottom: 5px var(--border-color) solid;
+}
+
+.titlebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--titlebar-height);
+    padding: 0 var(--default-spc);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap;
+    background-color: var(--panel-header-color);
+    border-bottom: 4px var(--border-color) solid;
+    overflow: hidden;
+}
+
+.titlebar .lead {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.titlebar .lead .brand {
+    font-size: 36px;
+    gap: var(--default-spc);
+    text-decoration: none;
+}
+
+.titlebar .follow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--default-spc);
+}
+
+.app-content {
+    position: absolute;
+    inset: var(--titlebar-height) 0 0 0;
+    padding: 0;
+    background: url("/static/icon.svg") no-repeat center;
+}
+
+.app-content-bounds {
+    position: absolute;
+    inset: var(--default-spc);
+}
+
+.overlay {
+    position: absolute;
+    inset: 0 0 0 0;
+    background-color: var(--overlay-color);
+    z-index: 1000;
+}
+
+.data-table {
+    border: 2px var(--border-color) solid;
+    border-collapse: collapse;
+}
+
+.data-table tr {
+    border: 2px var(--border-color) solid;
+}
+
+.data-table thead tr {
+    background-color: var(--panel-header-color);
+}
+
+.data-table tbody tr:nth-child(even) {
+    background-color: var(--panel-header-color);
+}
+
+.data-table th, .data-table td {
+    border: 2px var(--border-color) solid;
+    padding: 8px 12px;
+}

@@ -1,0 +1,52 @@
+package templates
+
+templ HeadSection(title string) {
+	<head>
+	if len(title) == 0 {
+		<title>Your App!</title>
+	} else {
+		<title>Your App! - {title}</title>
+	}
+	<link rel="stylesheet" href="/static/main.css" />
+	<link rel="icon" href="/static/icon.svg" />
+	<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+	</head>
+}
+
+templ Frame(title string, username string) {
+	<html lang="en">
+	@HeadSection(title)
+	<body>
+	@TitleBar(username)
+	<div id="app-content" class="app-content">
+		{children...}
+	</div>
+	</body>
+	</html>
+}
+
+templ BlankFrame(title string) {
+	<html lang="en">
+	@HeadSection(title)
+	<body>
+	{children...}
+	</body>
+	</html>
+}
+
+templ TitleBar(username string) {
+	<div class="titlebar">
+		<div class="lead">
+			<a class="brand" href="/">Your App!</a>
+		</div>
+		<div class="follow">
+		if len(username) == 0 {
+			<a href="/login">Login</a>
+		} else {
+			<p>{username}</p>
+			<a href="/logout">Logout</a>
+			<a href="/pool">DB Stats</a>
+		}
+		</div>
+	</div>
+}

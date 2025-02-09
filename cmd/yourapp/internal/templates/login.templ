@@ -1,0 +1,34 @@
+package templates
+
+import "yourapp/feature/auth"
+
+templ LoginPage(csrfToken string) {
+	@BlankFrame("Login") {
+		@LoginContent(csrfToken)
+	}
+}
+
+templ LoginContent(csrfToken string) {
+	@ModalSized("Enter Username & Password", 670) {
+		<form action="/login" method="POST">
+		@FormTable() {
+			@FormLine() {
+				@FormItemLabel("username", "Username")
+				@FormItem() {
+					<input type="text" id="username" name="username" autofocus />
+				}
+			}
+			@FormLine() {
+				@FormItemLabel("password", "Password")
+				@FormItem() {
+					<input type="password" id="password" name="password" />
+				}
+			}
+		}
+		@ButtonGroup() {
+			<button>Login</button>
+		}
+		<input type="hidden" name={auth.CSRFFormKey} value={csrfToken} />
+		</form>
+	}
+}

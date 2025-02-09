@@ -1,0 +1,63 @@
+package templates
+
+import "fmt"
+
+css modalContainer() {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+css modal() {
+	position: relative;
+	background-color: var(--bg-color);
+	border: 2px var(--border-color) solid;
+}
+
+css modalHeader() {
+	font-weight: bold;
+	height: 64px;
+	width: 100%;
+	border-bottom: 4px var(--border-color) solid;
+	background-color: var(--panel-header-color);
+	overflow: hidden;
+	padding: 8px;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
+css modalHeaderText() {
+	margin: 0;
+	padding: 0;
+}
+
+css modalContent() {
+	padding: var(--default-spc);
+}
+
+templ ModalSized(title string, minWidthPx int) {
+	<div class={modalContainer, "overlay"}>
+		<div class={modal} style={modalMinWidth(minWidthPx)}>
+			<div class={modalHeader}>
+				<p class={modalHeaderText}>{title}</p>
+			</div>
+			<div class={modalContent}>
+				{children...}
+			</div>
+		</div>
+	</div>
+}
+
+templ Modal(title string) {
+	@ModalSized(title, 0) {
+		{children...}
+	}
+}
+
+func modalMinWidth(minWidthPx int) string {
+	if minWidthPx == 0 {
+		return "min-width:300px"
+	}
+	return fmt.Sprintf("min-width:%dpx", minWidthPx)
+}
