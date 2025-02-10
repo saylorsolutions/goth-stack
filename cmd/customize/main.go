@@ -66,11 +66,11 @@ func main() {
 	if err := os.RemoveAll(filepath.Join("cmd", "customize")); err != nil {
 		fmt.Println("Unable to remove customize. Changes are verified, so proceeding anyway.")
 	}
-	//fmt.Println("Re-initializing git repository...")
-	//if err := doFinalize(gitExec, "yourapp", newAppName); err != nil {
-	//	fmt.Println("Failed to re-initialize git repo:", err)
-	//	fmt.Println("This will need to be done manually")
-	//}
+	fmt.Println("Re-initializing git repository...")
+	if err := doFinalize(gitExec, "yourapp", newAppName); err != nil {
+		fmt.Println("Failed to re-initialize git repo:", err)
+		fmt.Println("This will need to be done manually")
+	}
 	fmt.Println("Customization complete. Enjoy!")
 }
 
