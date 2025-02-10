@@ -13,7 +13,7 @@ import (
 var (
 	waypointDirs = []string{".git", "cmd", "feature", "foundation", "infra", "modmake"}
 	importDirs   = []string{"cmd/yourapp", "feature", "foundation"}
-	pathDirs     = []string{"modmake", "cmd/yourapp", "README.md", "docker-compose.yaml"}
+	pathDirs     = []string{"modmake", "cmd/yourapp", "README.md", "docker-compose.yaml", "infra"}
 	explicitAdd  = []string{"cmd/yourapp/templates/util.go"}
 )
 
@@ -77,6 +77,11 @@ func doTransform(newModuleName, newAppName string) error {
 	}
 	if err := changeModuleName(newModuleName); err != nil {
 		return err
+	}
+	for _, dir := range pathDirs {
+		if err := replaceAppName(dir, "yourapp", newAppName); err != nil {
+			return err
+		}
 	}
 
 	return nil
