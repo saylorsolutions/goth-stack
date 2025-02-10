@@ -7,7 +7,7 @@ require (
 	github.com/gorilla/securecookie v1.1.2
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/saylorsolutions/modmake v0.4.3
-	github.com/saylorsolutions/x v0.0.0-20250206130439-69d0f5340a0d
+	github.com/saylorsolutions/x v0.0.0-20250210082840-dd43c8affc69
 	github.com/stretchr/testify v1.10.0
 )
 

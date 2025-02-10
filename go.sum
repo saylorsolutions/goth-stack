@@ -37,8 +37,8 @@ github.com/saylorsolutions/cache v1.2.0 h1:H6nI/aZY2F87MMUR+Iz1UHS+areQ6z/kGymD0
 github.com/saylorsolutions/cache v1.2.0/go.mod h1:NXWMylDOfhrn9Jju2GnYXPlWCMDntw2rA9PBT3F0We8=
 github.com/saylorsolutions/modmake v0.4.3 h1:CNOrepazyoLYoHpI9qLph1hjtto4HMiu3yLtdN/gwLQ=
 github.com/saylorsolutions/modmake v0.4.3/go.mod h1:+VIZZRQKM1XN899Dnym1WtfdADedCZCGNxWIIoOkUYA=
-github.com/saylorsolutions/x v0.0.0-20250206130439-69d0f5340a0d h1:pKtqnPrJyzNG7EXm/viZDSkkYz/0lX5NFy+LTiBbG0g=
-github.com/saylorsolutions/x v0.0.0-20250206130439-69d0f5340a0d/go.mod h1:BYMnJm4pNNF5mmXOhrhJs6U7r4uRRx9URae51YwetU8=
+github.com/saylorsolutions/x v0.0.0-20250210082840-dd43c8affc69 h1:sVHCW477slMlqgPxqe9pUHIbBzYGDtMK1TLJZ+kCEKU=
+github.com/saylorsolutions/x v0.0.0-20250210082840-dd43c8affc69/go.mod h1:BYMnJm4pNNF5mmXOhrhJs6U7r4uRRx9URae51YwetU8=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
