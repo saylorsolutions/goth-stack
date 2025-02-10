@@ -14,6 +14,7 @@ var (
 	waypointDirs = []string{".git", "cmd", "feature", "foundation", "infra", "modmake"}
 	importDirs   = []string{"cmd/yourapp", "feature", "foundation"}
 	pathDirs     = []string{"modmake", "cmd/yourapp", "README.md", "docker-compose.yaml"}
+	explicitAdd  = []string{"cmd/yourapp/templates/util.go"}
 )
 
 func main() {
@@ -60,6 +61,11 @@ func main() {
 		gitRollback(gitExec)
 		os.Exit(1)
 	}
+	//fmt.Println("Re-initializing git repository...")
+	//if err := doFinalize(gitExec, "yourapp", newAppName); err != nil {
+	//	fmt.Println("Failed to re-initialize git repo:", err)
+	//	fmt.Println("This will need to be done manually")
+	//}
 	fmt.Println("Customization complete. Enjoy!")
 }
 
@@ -73,6 +79,22 @@ func doTransform(newModuleName, newAppName string) error {
 		return err
 	}
 
+	return nil
+}
+
+func doFinalize(gitExec, oldAppName, newAppName string) error {
+	if err := os.RemoveAll(".git"); err != nil {
+		return fmt.Errorf("unable to remove .git directory: %w", err)
+	}
+	if err := exec.Command(gitExec, "init").Run(); err != nil {
+		return fmt.Errorf("unable to initialize fresh git repository: %w", err)
+	}
+	_ = exec.Command(gitExec, "add", ".").Run()
+	for _, explicit := range explicitAdd {
+		explicit = strings.ReplaceAll(explicit, oldAppName, newAppName)
+		_ = exec.Command(gitExec, "add", explicit).Run()
+	}
+	_ = exec.Command(gitExec, "commit", "-m", "Customized template from github.com/saylorsolutions/goth-stack").Run()
 	return nil
 }
 
