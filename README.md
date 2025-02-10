@@ -50,12 +50,14 @@ Different top level directories have different semantics.
 In general, higher directories in the tree (when sorted alphabetically) depend on lower directories.
 
 ## `cmd`
+
 This is the "command" directory, and it has a subdirectory for each application with a `main.go`.
 Command directories can have internal packages on which they depend, and depend on those in `feature`.
 
 Nothing outside of `cmd` should depend on anything in `cmd`.
 
 ### `cmd/<yourapp>`
+
 This is where the entry point of your web server will be (main.go).
 Within this directory is:
 - `static`
@@ -69,6 +71,7 @@ Within this directory is:
   - There is a `util.go` file in here that can be used to provide helper functionality to these templates. All other generated Go files are ignored by Git.
 
 ## `feature`
+
 This directory holds features that directly support the applications in `cmd`.
 What goes in here will largely depend on what your app is intended to do.
 Packages in this folder should be specific to the domain in which the applications exist, but are more general purpose.
@@ -77,10 +80,12 @@ Packages in this folder should be specific to the domain in which the applicatio
 This is where auth, audit, and model code is at, each in their own sub-package within `feature`.
 
 ## `foundation`
+
 Foundation packages are those that support `feature` or `cmd` packages.
 They should be very general purpose, to the point that they could be harvested into libraries if needed in multiple domains.
 
 ## `infra`
+
 The files here are used for system component provisioning (with Docker in this case).
 There should be a directory for each component that needs this support.
 
@@ -88,6 +93,7 @@ Files here *may* support higher directories, but it's not a requirement.
 The main use-case for that would be embedding SQL scripts for live migration.
 
 ## `modmake`
+
 Modmake build system files should go here.
 This is a flexible build system that uses plain Go to configure tool acquisition, generate code/data, run tests and benchmarks, and build and package your code.
 
