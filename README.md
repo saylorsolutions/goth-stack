@@ -135,3 +135,18 @@ For more information check out the [Modmake documentation](https://saylorsolutio
     - This means that the cookie values will not be available to JavaScript, and you'll need to add fields in form templates to transmit the CSRF token value.
     - An example of this can be seen in [login.templ](cmd/yourapp/internal/templates/login.templ) and the [associated router](cmd/yourapp/internal/routes.go).
   - If you want multiple applications (or multiple instances) to recognize the cookie values, then you'll need to set the same hash key in all instances with the `SESSION_HASHKEY` environment variable.
+- I don't use [Tailwind](https://tailwindcss.com/), which is often included in descriptions of the full GOTTH stack.
+  - I don't like the idea of Tailwind because:
+    - I don't want to use Node or any other JS runtime any more than is strictly necessary. It introduces a ton of complexity and risk that I don't want to deal with if I can help it.
+    - I like reading and writing CSS.
+    - I use CSS variables to control a lot of things consistently (see the top of [main.css](cmd/yourapp/static/main.css) for reference).
+    - I tend to use fairly specific CSS selectors, which prevents issues with over-selecting.
+    - Templ lets me add [CSS components](https://templ.guide/syntax-and-usage/css-style-management/#css-components) for one-off styling.
+    - I don't think working with CSS directly introduces drag in the development process, or at the very least no more than adding all the Tailwind classes everywhere would introduce.
+    - I don't think typing hundreds of class names is superior to writing a few reusable CSS rules.
+    - I don't do exceptionally complicated things with CSS that only apply to a few elements, where Tailwind might be more relevant.
+      - Even if I did, I would probably reach for CSS components again.
+  - This template can certainly include Tailwind or any other front end workflow your heart could desire.
+    - Tailwind or other CDN references can be included by adding it to the HeadSection component in [base.templ](cmd/yourapp/internal/templates/base.templ).
+    - Any frontend assets can be added to the [static](cmd/yourapp/static) directory at build time to include them in the embedded files shipped with the application.
+      - You may want to emit an [import map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules#importing_modules_using_import_maps) into [static](cmd/yourapp/static) to resolve files with appended hashes.
