@@ -19,7 +19,7 @@ var (
 	waypointDirs = []string{".git", "cmd", "feature", "foundation", "infra", "modmake"}
 	importDirs   = []string{"cmd/yourapp", "feature", "foundation"}
 	pathDirs     = []string{"modmake", "cmd/yourapp", "README.md", "docker-compose.yaml", "infra"}
-	explicitAdd  = []string{"cmd/yourapp/templates/util.go"}
+	explicitAdd  = []string{"cmd/yourapp/internal/templates/util.go"}
 )
 
 func main() {
