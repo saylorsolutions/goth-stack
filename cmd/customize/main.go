@@ -6,8 +6,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"unicode"
+)
+
+const (
+	curAppName = "yourapp"
 )
 
 var (
@@ -53,13 +58,13 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Println("Customizations complete, validating Go code...")
-	vet := exec.Command(goExec, "vet", "./...")
-	vet.Stdout = os.Stdout
-	vet.Stderr = os.Stdout
-	if err := vet.Run(); err != nil {
+	if err := validateChanges(goExec); err != nil {
 		fmt.Println("Detected validation errors, rolling back changes...")
 		gitRollback(gitExec)
 		os.Exit(1)
+	}
+	if err := os.RemoveAll(filepath.Join("cmd", "customize")); err != nil {
+		fmt.Println("Unable to remove customize. Changes are verified, so proceeding anyway.")
 	}
 	//fmt.Println("Re-initializing git repository...")
 	//if err := doFinalize(gitExec, "yourapp", newAppName); err != nil {
@@ -71,7 +76,7 @@ func main() {
 
 func doTransform(newModuleName, newAppName string) error {
 	for _, dir := range importDirs {
-		if err := replaceDirImports(dir, "yourapp", newModuleName); err != nil {
+		if err := replaceDirImports(dir, curAppName, newModuleName); err != nil {
 			return err
 		}
 	}
@@ -79,7 +84,7 @@ func doTransform(newModuleName, newAppName string) error {
 		return err
 	}
 	for _, dir := range pathDirs {
-		if err := replaceAppName(dir, "yourapp", newAppName); err != nil {
+		if err := replaceAppName(dir, curAppName, newAppName); err != nil {
 			return err
 		}
 	}
@@ -118,10 +123,18 @@ func checkReadiness() (gitExecutable string, goExecutable string) {
 		fmt.Println("git is required to finalize/rollback setup")
 		os.Exit(1)
 	}
+	if err := exec.Command(git, "--version").Run(); err != nil {
+		fmt.Println("Unable to run 'git --version'")
+		os.Exit(1)
+	}
 
 	goExec, err := exec.LookPath("go")
 	if err != nil {
 		fmt.Println("go is required to validate setup")
+		os.Exit(1)
+	}
+	if err := exec.Command(goExec, "version").Run(); err != nil {
+		fmt.Println("Unable to run 'go version'")
 		os.Exit(1)
 	}
 	return git, goExec
@@ -162,4 +175,20 @@ func validateAppName(appName string) (string, error) {
 	}
 	appName = string(writtenRunes[:numWritten])
 	return appName, nil
+}
+
+func validateChanges(goExec string) error {
+	vet := exec.Command(goExec, "vet", "./...")
+	vet.Stdout = os.Stdout
+	vet.Stderr = os.Stdout
+	if err := vet.Run(); err != nil {
+		return err
+	}
+	test := exec.Command(goExec, "test", "-v", "./...")
+	test.Stdout = os.Stdout
+	test.Stderr = os.Stdout
+	if err := test.Run(); err != nil {
+		return err
+	}
+	return nil
 }

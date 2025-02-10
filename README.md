@@ -5,25 +5,44 @@ This is a fairly simple template for making Go web apps with session auth.
 # Make it your own
 
 This project is set up to provide a ready to use baseline for a simple web server, and still allow changing things to meet your needs.
+The first step would be cloning this repo to your local machine, navigating to the root of the new repo, and following along with the next section.
 
-The first step would be recursively replacing all instances of the string "yourapp" with something that better fits your needs.
+## Customize
 
-On Linux this can be done with sed from the root of the repository.
+> Customize expects to be run at the root of the cloned repository, with a clean working tree.
+> So, if you want to use customize, make sure it's run ***BEFORE*** making any changes, since your changes can be overridden in the process.
+
+This process has some dependencies. Make sure these are met before proceeding further:
+- The `git` executable should be available on the PATH of the user running customize.
+  - Run `git --version` to confirm this.
+- The `go` executable should be available on the PATH of the user running customize.
+  - The `go` toolchain should be a version compatible with that shown in the `go.mod` of this repo.
+  - Run `go version` to get the version and compare with what is shown in [go.mod](go.mod).
+
+## Running customize
+
+This part is pretty simple.
 ```shell
-# This will replace all instances of "yourapp" with "mysupercoolapp".
-grep -RiIl 'yourapp' | xargs sed -i 's/yourapp/mysupercoolapp/g'
+go run ./cmd/customize
 ```
 
-This will include the `go.mod` file, and you can change the name of your module to whatever you'd like.
-Most modern IDEs will offer some kind of refactoring operation to make sure that all references (like imports) are updated when you update the module name.
+This command will ask for a new Go module name, and a new application name.
+The Go module name is not validated, but `go vet` is run before making any permanent changes.
+The given app name will replace all instances of "yourapp" in this repo.
 
-Check that all files are still valid by running `go vet ./...` from the root of the repository. No output is expected.
-Then start the Docker Compose setup with `docker compose up` to make sure that you see good output.
-The application should be available at `http://localhost:8080`, and you should see a login prompt in your browser.
-Use Ctrl+C in your terminal running the compose setup to shut everything down.
+These are the operations performed, in order, and any errors will result in rolling back the state of the repo to what you initially checked out.
+1. Generates template code using Modmake (see "Technologies" below).
+2. Changes the module name to what you specified, and retarget import paths to use the new name.
+3. Changes paths referencing the old app name to the new name in files.
+   - This includes image names in docker-compose.yaml.
+4. Changes directories with the old app name to use the new name.
+5. Vets and tests code to ensure that it can still be compiled.
 
-From here, you probably want to delete the `.git` directory at the root of the repo and `git init` your own repository.
-Drop a commit for your baseline, and you're good to go!
+At this point customizations are considered verified, and a rollback will not occur.
+1. Removes customize since it won't be needed again.
+2. Removes the existing `.git` directory and initialize a new repository, creating a commit with the new state as the base commit.
+
+If at this point you're not happy with the result, then delete the repo and clone down the template again, manually changing things as you see fit.
 
 # Structure
 
@@ -46,7 +65,7 @@ Within this directory is:
   - This is where endpoint routes are defined and their dependencies are made available.
   - Route dependencies can be referenced through the `Router` type for simplicity.
 - `internal/templates`
-  - This is where Templ templates (see below) are created to define whole pages, reusable components, or HTMX responses.
+  - This is where Templ templates (see "Technologies" below) are created to define whole pages, reusable components, or HTMX responses.
   - There is a `util.go` file in here that can be used to provide helper functionality to these templates. All other generated Go files are ignored by Git.
 
 ## `feature`
