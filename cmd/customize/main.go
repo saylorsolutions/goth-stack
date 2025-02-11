@@ -102,7 +102,7 @@ func doFinalize(gitExec, oldAppName, newAppName string) error {
 	_ = exec.Command(gitExec, "add", ".").Run()
 	for _, explicit := range explicitAdd {
 		explicit = strings.ReplaceAll(explicit, oldAppName, newAppName)
-		_ = exec.Command(gitExec, "add", explicit).Run()
+		_ = exec.Command(gitExec, "add", "-f", explicit).Run()
 	}
 	_ = exec.Command(gitExec, "commit", "-m", "Customized template from github.com/saylorsolutions/goth-stack").Run()
 	return nil
