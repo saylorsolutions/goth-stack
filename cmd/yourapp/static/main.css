@@ -24,6 +24,11 @@ html, body {
     color: var(--fg-color);
 }
 
+input, button, label {
+    font-size: var(--font-size);
+    color: var(--fg-color);
+}
+
 button, input[type="submit"] {
     cursor: pointer;
     border-radius: 8px;
@@ -35,10 +40,6 @@ button, input[type="submit"] {
 button:active, input[type="submit"]:active {
     background-color: var(--border-color);
     border: 5px var(--panel-header-color) solid;
-}
-
-input, button {
-    font-size: var(--font-size);
 }
 
 input[type="text"], input[type="password"] {

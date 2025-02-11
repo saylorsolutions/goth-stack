@@ -9,7 +9,7 @@ func localBuild(base *Build) {
 	local.AddNewStep("run", "Runs the application locally",
 		Go().Run("./cmd/yourapp").
 			CaptureStdin().
-			Env("DBURL", "postgres://postgres:s3cret@localhost:5432/postgres"),
+			Env("DBURL", "postgres://postgres:secretpassword@localhost:5432/postgres"),
 	)
 
 	base.ImportAndLink("local", local)
