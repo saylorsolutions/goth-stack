@@ -26,6 +26,7 @@ func (ro *Router) ServeMux() *http.ServeMux {
 	setCSRF := ro.AuthSvc.SetCSRF()
 	requireCSRF := ro.AuthSvc.RequireCSRF()
 	staticHandler := httpx.EmbeddedHandler(ro.StaticAssets, "", "")
+	mux.HandleFunc("/blank", func(w http.ResponseWriter, r *http.Request) {})
 	mux.Handle("GET /static/", staticHandler)
 	mux.Handle("GET /{$}", requireSession(ro.homePage()))
 	mux.Handle("GET /unauthorized", requireSession(ro.unauthorized()))

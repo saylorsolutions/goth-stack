@@ -1,0 +1,19 @@
+package templates
+
+templ ErrorDisplay() {
+	<p id="err-search-display" style="color:var(--danger-fg);font-weight: bold;"
+		hx-trigger="click"
+		hx-get="/blank"
+		hx-target="this"
+	></p>
+	<script>
+	let params = new URLSearchParams(new URL(window.location).search);
+	let display = document.querySelector('#err-search-display');
+	let err = params.get('err');
+	if (err && err.length > 0) {
+		display.innerText = params.get('err');
+	} else {
+		display.parentElement.removeChild(display);
+	}
+	</script>
+}

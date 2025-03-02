@@ -6,14 +6,18 @@
 /* All variables should go here */
 :root {
     --font-size: 29px;
-    --panel-header-color: #BBDEFB;
+    --danger-fg: #c62525;
+    --danger-border: #a50303;
     --border-color: #88C7FB;
     --default-spc: 16px;
     --fg-color: #333;
     --overlay-color: #E6EFF27f;
     --bg-color: #E6EFF2;
+    --bg-alt: #D0E8FB;
     --titlebar-height: 64px;
-    --bg-input: #D0E8FB;
+    --panel-header-color: #BBDEFB;
+    --bg-input: var(--bg-alt);
+    --text-shadow: 0 0 8px black;
 }
 
 html, body {
@@ -34,12 +38,24 @@ button, input[type="submit"] {
     border-radius: 8px;
     background-color: var(--panel-header-color);
     border: 5px var(--border-color) solid;
-    padding: var(--default-spc) 24px;
+    padding: 12px var(--default-spc);
 }
 
 button:active, input[type="submit"]:active {
     background-color: var(--border-color);
     border: 5px var(--panel-header-color) solid;
+}
+
+button.danger, input[type="submit"].danger {
+    background-color: var(--bg-alt);
+    border-color: var(--danger-border);
+    color: var(--danger-fg);
+}
+
+button.danger:active, input[type="submit"].danger:active {
+    background-color: var(--danger-border);
+    border-color: var(--bg-alt);
+    text-shadow: var(--text-shadow);
 }
 
 input[type="text"], input[type="password"] {
