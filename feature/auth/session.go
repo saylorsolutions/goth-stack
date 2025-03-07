@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 	"yourapp/feature/audit"
+	"yourapp/foundation/urlprefix"
 )
 
 const (
@@ -39,18 +40,18 @@ func (s *Service) RequireSession() httpx.Middleware {
 		return mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			sessionKey, err := s.GetCookieValue(r, SessionCookieName)
 			if err != nil {
-				http.Redirect(w, r, NoSessionRedirect, http.StatusFound)
+				http.Redirect(w, r, urlprefix.Apply(NoSessionRedirect), http.StatusFound)
 				return
 			}
 			result, err := s.userRepo.GetSessionUser(r.Context(), s.pool, sessionKey)
 			if err != nil || result == nil {
 				s.log.Postf(r.Context(), audit.AnonymousUser, "Failed to get user details for auth %s: %v", sessionKey, err)
-				http.Redirect(w, r, NoSessionRedirect, http.StatusFound)
+				http.Redirect(w, r, urlprefix.Apply(NoSessionRedirect), http.StatusFound)
 				return
 			}
 			if len(result.Username) == 0 {
 				s.log.Postf(r.Context(), audit.AnonymousUser, "Failed to get user details for auth: %s", sessionKey)
-				http.Redirect(w, r, NoSessionRedirect, http.StatusFound)
+				http.Redirect(w, r, urlprefix.Apply(NoSessionRedirect), http.StatusFound)
 				return
 			}
 			details := Details{

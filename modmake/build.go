@@ -27,7 +27,10 @@ func main() {
 	b := NewBuild()
 	b.Tools().DependsOnRunner("install-templ", "", Go().Install("github.com/a-h/templ/cmd/templ@v0.3.833"))
 	b.Generate().DependsOnRunner("gen-templ", "",
-		Exec("templ", "generate", "./cmd/yourapp/internal/templates"),
+		Script(
+			Exec("templ", "generate", "./cmd/yourapp/internal/templates"),
+			Go().VetAll(),
+		),
 	)
 	b.Build().DependsOnRunner("build-app", "", Script(
 		RemoveDir(appBuildPath),

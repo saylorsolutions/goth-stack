@@ -3,6 +3,7 @@ package auth
 import (
 	"net/http"
 	"time"
+	"yourapp/foundation/urlprefix"
 )
 
 func (s *Service) SetSecureCookie(w http.ResponseWriter, key string, value string, cookieTTL time.Duration) error {
@@ -13,7 +14,7 @@ func (s *Service) SetSecureCookie(w http.ResponseWriter, key string, value strin
 	cookie := http.Cookie{
 		Name:     key,
 		Value:    val,
-		Path:     "/",
+		Path:     urlprefix.Apply("/"),
 		Expires:  time.Now().Add(cookieTTL),
 		HttpOnly: true,
 		Secure:   true,

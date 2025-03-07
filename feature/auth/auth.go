@@ -13,6 +13,7 @@ import (
 	"strings"
 	"yourapp/feature/audit"
 	"yourapp/feature/model"
+	"yourapp/foundation/urlprefix"
 )
 
 const (
@@ -76,12 +77,12 @@ func (s *Service) RequireAuth(auth string) httpx.Middleware {
 			details, ok := GetSessionUser(r)
 			if !ok {
 				s.log.Postf(r.Context(), audit.AnonymousUser, "User is not granted auth '%s'", auth)
-				http.Redirect(w, r, NoSessionRedirect, http.StatusFound)
+				http.Redirect(w, r, urlprefix.Apply(NoSessionRedirect), http.StatusFound)
 				return
 			}
 			if !details.HasAuth(auth) {
 				s.log.Postf(r.Context(), details.Username, "User is not granted auth '%s'", auth)
-				http.Redirect(w, r, NoSessionRedirect, http.StatusFound)
+				http.Redirect(w, r, urlprefix.Apply(NoSessionRedirect), http.StatusFound)
 				return
 			}
 			next.ServeHTTP(w, r)

@@ -9,6 +9,7 @@ import (
 	"yourapp/cmd/yourapp/internal/templates"
 	"yourapp/feature/auth"
 	"yourapp/feature/model"
+	"yourapp/foundation/urlprefix"
 )
 
 type Router struct {
@@ -71,7 +72,7 @@ func (ro *Router) loginHandling() http.HandlerFunc {
 		}
 		if !result.Matches {
 			ro.AuthSvc.AuditEvent(r.Context(), username, "failed authentication")
-			http.Redirect(w, r, "/login", http.StatusFound)
+			ro.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
 		if _, err = ro.AuthSvc.SetAuthenticatedSession(w, r, username); err != nil {
@@ -80,7 +81,7 @@ func (ro *Router) loginHandling() http.HandlerFunc {
 			return
 		}
 		ro.AuthSvc.AuditEvent(r.Context(), username, "Authenticated")
-		http.Redirect(w, r, "/", http.StatusFound)
+		ro.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
 }
@@ -89,7 +90,7 @@ func (ro *Router) logoutHandling() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		details, ok := auth.GetSessionUser(r)
 		if !ok {
-			http.Redirect(w, r, "/login", http.StatusFound)
+			ro.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
 
@@ -97,7 +98,7 @@ func (ro *Router) logoutHandling() http.HandlerFunc {
 		if _, err := model.InvalidateSession(r.Context(), ro.Pool, details.SessionKey); err != nil {
 			ro.Log.Println("[ERR] Failed to invalidate auth:", err)
 		}
-		http.Redirect(w, r, "/login", http.StatusFound)
+		ro.Redirect(w, r, "/login", http.StatusFound)
 	}
 }
 
@@ -116,4 +117,8 @@ func (ro *Router) unauthorized() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ro.renderComponent(w, r, templates.UnauthorizedPage())
 	}
+}
+
+func (ro *Router) Redirect(w http.ResponseWriter, r *http.Request, location string, status int) {
+	http.Redirect(w, r, urlprefix.Apply(location), status)
 }

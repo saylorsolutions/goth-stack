@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 	"yourapp/cmd/yourapp/internal/routes"
+	"yourapp/foundation/urlprefix"
 )
 
 var (
@@ -62,7 +63,7 @@ func run(ctx context.Context, logger *log.Logger) error {
 
 	srv := &http.Server{
 		Addr:    ":8080",
-		Handler: handler,
+		Handler: urlprefix.Group(handler),
 	}
 
 	log.Println("Starting yourapp server...")

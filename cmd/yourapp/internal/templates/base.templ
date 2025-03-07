@@ -1,5 +1,7 @@
 package templates
 
+import "fmt"
+
 templ HeadSection(title string) {
 	<head>
 	if len(title) == 0 {
@@ -7,10 +9,14 @@ templ HeadSection(title string) {
 	} else {
 		<title>Your App! - {title}</title>
 	}
-	<link rel="stylesheet" href="/static/main.css" />
-	<link rel="icon" href="/static/icon.svg" />
+	<link rel="stylesheet" href={prefixString("/static/main.css")} />
+	<link rel="icon" href={prefixString("/static/icon.svg")} />
 	<script src="https://unpkg.com/htmx.org@2.0.4"></script>
 	</head>
+}
+
+css appContentBG() {
+    background: {templ.SafeCSSProperty(fmt.Sprintf("url(%s) no-repeat center", prefixString("/static/icon.svg")))};
 }
 
 templ Frame(title string, username string) {
@@ -18,7 +24,7 @@ templ Frame(title string, username string) {
 	@HeadSection(title)
 	<body>
 	@TitleBar(username)
-	<div id="app-content" class="app-content">
+	<div id="app-content" class={appContentBG, "app-content"}>
 		{children...}
 	</div>
 	</body>
@@ -37,15 +43,15 @@ templ BlankFrame(title string) {
 templ TitleBar(username string) {
 	<div class="titlebar">
 		<div class="lead">
-			<a class="brand" href="/">Your App!</a>
+			<a class="brand" href={prefix("/")}>Your App!</a>
 		</div>
 		<div class="follow">
 		if len(username) == 0 {
-			<a href="/login">Login</a>
+			<a href={prefix("/login")}>Login</a>
 		} else {
 			<p>{username}</p>
-			<a href="/logout">Logout</a>
-			<a href="/pool">DB Stats</a>
+			<a href={prefix("/logout")}>Logout</a>
+			<a href={prefix("/pool")}>DB Stats</a>
 		}
 		</div>
 	</div>

@@ -3,7 +3,7 @@ package templates
 templ ErrorDisplay() {
 	<p id="err-search-display" style="color:var(--danger-fg);font-weight: bold;"
 		hx-trigger="click"
-		hx-get="/blank"
+		hx-get={prefixString("/blank")}
 		hx-target="this"
 	></p>
 	<script>
