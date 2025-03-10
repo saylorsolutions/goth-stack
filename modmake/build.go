@@ -14,6 +14,9 @@ const (
 var (
 	appBuildPath = Path("./build/yourapp")
 	appName      = "yourapp"
+	versions     = map[string]string{
+		"templVersion": "v0.3.833",
+	}
 )
 
 func init() {
@@ -25,9 +28,13 @@ func init() {
 func main() {
 	Go().PinLatestV1(23)
 	b := NewBuild()
-	b.Tools().DependsOnRunner("install-templ", "", Go().Install("github.com/a-h/templ/cmd/templ@v0.3.833"))
+	b.Tools().DependsOnRunner("install-templ", "", Go().Install(F("github.com/a-h/templ/cmd/templ@${templVersion}", versions)))
 	b.Generate().DependsOnRunner("gen-templ", "",
-		Exec("templ", "generate", "./cmd/yourapp/internal/templates"),
+		Script(
+			Go().Get(F("github.com/a-h/templ@${templVersion}", versions)),
+			Exec("templ", "generate", "./cmd/yourapp/internal/templates"),
+			Go().VetAll(),
+		),
 	)
 	b.Build().DependsOnRunner("build-app", "", Script(
 		RemoveDir(appBuildPath),

@@ -9,6 +9,12 @@ import (
 	"yourapp/feature/auth"
 )
 
+func (ro *Router) fallbackHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ro.Redirect(w, r, "/", http.StatusFound)
+	}
+}
+
 func (ro *Router) renderComponent(w http.ResponseWriter, r *http.Request, comp templ.Component) {
 	var buf bytes.Buffer
 	if err := comp.Render(r.Context(), &buf); err != nil {
@@ -21,7 +27,7 @@ func (ro *Router) renderComponent(w http.ResponseWriter, r *http.Request, comp t
 func (ro *Router) getDetailsOrRedirect(w http.ResponseWriter, r *http.Request) (auth.Details, bool) {
 	details, ok := auth.GetSessionUser(r)
 	if !ok {
-		http.Redirect(w, r, "/login", http.StatusFound)
+		ro.Redirect(w, r, "/login", http.StatusFound)
 		return auth.Details{}, false
 	}
 	return details, true
@@ -37,7 +43,7 @@ func (ro *Router) requireAdmin() httpx.Middleware {
 			}
 			if !details.Admin {
 				ro.AuthSvc.AuditEventf(r.Context(), details.Username, "Attempted to access %s %s, not admin", r.Method, r.URL.Path)
-				http.Redirect(w, r, "/unauthorized", http.StatusFound)
+				ro.Redirect(w, r, "/unauthorized", http.StatusFound)
 			}
 			next.ServeHTTP(w, r)
 		}))
@@ -53,7 +59,7 @@ func (ro *Router) requireAuth(auth string) httpx.Middleware {
 			}
 			if !details.HasAuth(auth) {
 				ro.AuthSvc.AuditEventf(r.Context(), details.Username, "Attempted to access %s %s, not granted auth %s", r.Method, r.URL.Path, auth)
-				http.Redirect(w, r, "/unauthorized", http.StatusFound)
+				ro.Redirect(w, r, "/unauthorized", http.StatusFound)
 			}
 			next.ServeHTTP(w, r)
 		})

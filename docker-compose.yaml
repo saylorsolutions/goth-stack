@@ -26,3 +26,5 @@ services:
       - "DBURL=postgres://postgres:secretpassword@yourapp-db:5432/postgres"
       # This key will be used to validate integrity of the session and CSRF cookie values.
       - "SESSION_HASHKEY=deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      # Sets a URL prefix for this application. Useful for hosting multiple applications on the same host.
+      # - "URL_PREFIX=/yourapp"

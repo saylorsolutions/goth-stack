@@ -10,9 +10,9 @@ templ StatsPage(username string, stats sql.DBStats) {
 					<tr><th>Metric</th><th>Value</th></tr>
 				</thead>
 				<tbody>
-					<tr><td>Open</td><td>{intToString(stats.OpenConnections)}</td></tr>
-					<tr><td>In Use</td><td>{intToString(stats.InUse)}</td></tr>
-					<tr><td>Idle</td><td>{intToString(stats.Idle)}</td></tr>
+					<tr><td>Open</td><td>{sprintf("%d", stats.OpenConnections)}</td></tr>
+					<tr><td>In Use</td><td>{sprintf("%d", stats.InUse)}</td></tr>
+					<tr><td>Idle</td><td>{sprintf("%d", stats.Idle)}</td></tr>
 				</tbody>
 			</table>
 		</div>

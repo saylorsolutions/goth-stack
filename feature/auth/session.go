@@ -6,11 +6,15 @@ import (
 	"net/http"
 	"time"
 	"yourapp/feature/audit"
+	"yourapp/foundation/urlprefix"
 )
 
 const (
-	NoSessionRedirect = "/login"
 	SessionCookieName = "JSESSIONID"
+)
+
+var (
+	NoSessionRedirect = urlprefix.Apply("/login")
 )
 
 type sessionDetails string

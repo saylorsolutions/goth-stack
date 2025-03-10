@@ -4,7 +4,7 @@ templ UnauthorizedPage() {
 	@BlankFrame("") {
 		@Modal("Unauthorized") {
 			<p>You are not able to view this page</p>
-			<a href="/">Go back</a>
+			<a href={prefix("/")}>Go back</a>
 		}
 	}
 }

@@ -1,7 +1,5 @@
 package templates
 
-import "yourapp/feature/auth"
-
 templ LoginPage(csrfToken string) {
 	@BlankFrame("Login") {
 		@LoginContent(csrfToken)
@@ -10,7 +8,7 @@ templ LoginPage(csrfToken string) {
 
 templ LoginContent(csrfToken string) {
 	@ModalSized("Enter Username & Password", 670) {
-		<form action="/login" method="POST">
+		<form action={prefix("/login")} method="POST">
 		@FormTable() {
 			@FormLine() {
 				@FormItemLabel("username", "Username")
@@ -28,7 +26,7 @@ templ LoginContent(csrfToken string) {
 		@ButtonGroup() {
 			<button>Login</button>
 		}
-		<input type="hidden" name={auth.CSRFFormKey} value={csrfToken} />
+		<input type="hidden" name={csrfFormKey} value={csrfToken} />
 		</form>
 	}
 }

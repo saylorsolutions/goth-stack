@@ -1,6 +1,33 @@
 # GoTH Stack Example
 
 This is a fairly simple template for making Go web apps with session auth.
+Please report any issues to the GitHub issue tracker for this repo.
+If you have any issues running Docker commands, please refer to [Docker's Getting Started Guide](https://docs.docker.com/get-started/).
+
+GoTH web apps are intended for serving server rendered content, but they can be extended to be the frame and [BFF](https://medium.com/mobilepeople/backend-for-frontend-pattern-why-you-need-to-know-it-46f94ce420b0) for a single page app if desired.
+To do this, the CSRF cookie flow may need to be changed a bit to allow JavaScript to access the CSRF token value.
+The current cookie settings do not allow front end code to access cookie values.
+See the settings in [cookies.go](feature/auth/cookies.go) for details, specifically the `HttpOnly` field.
+
+> This isn't advised, as allowing JavaScript access to these cookie values can weaken the security of your application.
+
+If you don't want to host your application with TLS enabled - either through a forward proxy or terminated by the app itself - then you may want to change the `Secure` cookie field.
+
+For more information on cookie settings and semantics, refer to the [RFC](https://datatracker.ietf.org/doc/html/rfc6265).
+
+## Quick Start
+
+This template should work out of the box by running `docker compose up -d --build`, and adding a user account to the `users` table in the database.
+
+### Add a User
+
+1. After you've started containers with the command above, start a psql shell in the running DB container with `docker exec -it yourapp-db psql -U postgres`.
+2. Enter this query to insert your user, replacing "youruser" and "yourpass" with the username and password you'd like to add. `insert into users (username, pass_hash) values ('youruser', gen_passwd('yourpass'));`
+3. If you'd like, you can check that your password will work at the login prompt by running `select check_passwd('youruser', 'yourpass');`. If `t` is returned, then you're good to go.
+4. Enter `\q` into the prompt to quit out and start using the template app in your browser.
+
+> Note that creating a user in this way will add an entry to the root user's `.psql_history` file with the password in plain text.
+> To delete this history, run `docker exec -it yourapp-db rm /root/.psql_history`.
 
 # Make it your own
 
@@ -115,8 +142,8 @@ For more information check out the [Modmake documentation](https://saylorsolutio
   - The data model can be extended by:
     - Adding more SQL scripts in `infra/pg/sql/` to represent new data entities. These will be executed when a fresh PG container starts up.
     - Providing model code to interact with the new entities in `feature/model/`.
-- [Docker](https://www.docker.com/) with [Compose](https://docs.docker.com/compose/) configuration to build and run your images.
-- The [Modmake](https://github.com/saylorsolutions/modmake) build system.
+- [Docker](https://www.docker.com/) with [Compose](https://docs.docker.com/compose/) configuration to build and run your app component images.
+- The [Modmake](https://saylorsolutions.github.io/modmake) build system.
   - This provides enough structure to make build logic easily extensible, while still providing plenty of flexibility.
   - Built binaries are usually output to `build`, which is ignored in the top level `.gitignore` file.
   - Distributable packages of any kind are usually output to `dist`, which is also ignored in the top level `.gitignore` file.
@@ -150,3 +177,4 @@ For more information check out the [Modmake documentation](https://saylorsolutio
     - Tailwind or other CDN references can be included by adding it to the HeadSection component in [base.templ](cmd/yourapp/internal/templates/base.templ).
     - Any frontend assets can be added to the [static](cmd/yourapp/static) directory at build time to include them in the embedded files shipped with the application.
       - You may want to emit an [import map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules#importing_modules_using_import_maps) into [static](cmd/yourapp/static) to resolve files with appended hashes.
+      - You could also add a mapping file that is ingested by your templates to inject the correct asset name, but this is a little more involved.
