@@ -1,7 +1,5 @@
 package templates
 
-import "fmt"
-
 templ HeadSection(title string) {
 	<head>
 	if len(title) == 0 {
@@ -16,7 +14,7 @@ templ HeadSection(title string) {
 }
 
 css appContentBG() {
-    background: {templ.SafeCSSProperty(fmt.Sprintf("url(%s) no-repeat center", prefixString("/static/icon.svg")))};
+    background: {templ.SafeCSSProperty(sprintf("url(%s) no-repeat center", prefixString("/static/icon.svg")))};
 }
 
 templ Frame(title string, username string) {

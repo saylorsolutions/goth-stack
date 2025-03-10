@@ -9,8 +9,8 @@ import (
 
 var csrfFormKey = auth.CSRFFormKey
 
-func intToString(i int) string {
-	return fmt.Sprintf("%d", i)
+func sprintf(format string, args ...any) string {
+	return fmt.Sprintf(format, args...)
 }
 
 func prefix(url string) templ.SafeURL {

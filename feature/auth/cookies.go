@@ -6,6 +6,10 @@ import (
 	"yourapp/foundation/urlprefix"
 )
 
+var (
+	CookieBasePath = urlprefix.Apply("/")
+)
+
 func (s *Service) SetSecureCookie(w http.ResponseWriter, key string, value string, cookieTTL time.Duration) error {
 	val, err := s.sc.Encode(key, value)
 	if err != nil {
@@ -14,7 +18,7 @@ func (s *Service) SetSecureCookie(w http.ResponseWriter, key string, value strin
 	cookie := http.Cookie{
 		Name:     key,
 		Value:    val,
-		Path:     urlprefix.Apply("/"),
+		Path:     CookieBasePath,
 		Expires:  time.Now().Add(cookieTTL),
 		HttpOnly: true,
 		Secure:   true,

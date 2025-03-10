@@ -27,20 +27,19 @@ func initFunc() {
 	cachedPrefix = "/" + prefix
 }
 
+// Apply will apply the configured URL path prefix to the given path.
 func Apply(in string) string {
 	in = "/" + cleansePattern.ReplaceAllString(in, "")
 	if len(cachedPrefix) == 0 {
 		return in
 	}
 	if !strings.HasPrefix(in, cachedPrefix) {
-		if !strings.HasPrefix(in, "/") {
-			return cachedPrefix + "/" + in
-		}
 		return cachedPrefix + in
 	}
 	return in
 }
 
+// Get will get the cached URL path prefix.
 func Get() string {
 	return cachedPrefix
 }
