@@ -22,7 +22,7 @@ type UsersRepo struct {
 	updateSessionLiveness func(context.Context, *sql.DB, string) (sql.Result, error)
 	getSessionUser        func(context.Context, *sql.DB, string) (*GetSessionUserResult, error)
 	invalidateSession     func(context.Context, *sql.DB, string) (sql.Result, error)
-	getLatestLog          func(context.Context, *sql.DB) ([]*GetLatestLogResult, error)
+	getLatestLogEntries   func(context.Context, *sql.DB, int) ([]*GetLatestLogEntriesResult, error)
 	grantAuth             func(context.Context, *sql.DB, string, string) (sql.Result, error)
 	revokeAuth            func(context.Context, *sql.DB, string, string) (sql.Result, error)
 	getAuthorizations     func(context.Context, *sql.DB) ([]*GetAuthorizationsResult, error)
@@ -173,15 +173,15 @@ func (repo *UsersRepo) InvalidateSession(ctx context.Context, conn *sql.DB, sess
 	return InvalidateSession(ctx, conn, sessionKey)
 }
 
-func (repo *UsersRepo) RedirectGetLatestLog(delegate func(context.Context, *sql.DB) ([]*GetLatestLogResult, error)) {
-	repo.getLatestLog = delegate
+func (repo *UsersRepo) RedirectGetLatestLogEntries(delegate func(context.Context, *sql.DB, int) ([]*GetLatestLogEntriesResult, error)) {
+	repo.getLatestLogEntries = delegate
 }
 
-func (repo *UsersRepo) GetLatestLog(ctx context.Context, conn *sql.DB) ([]*GetLatestLogResult, error) {
-	if repo.getLatestLog != nil {
-		return repo.getLatestLog(ctx, conn)
+func (repo *UsersRepo) GetLatestLogEntries(ctx context.Context, conn *sql.DB, limit int) ([]*GetLatestLogEntriesResult, error) {
+	if repo.getLatestLogEntries != nil {
+		return repo.getLatestLogEntries(ctx, conn, limit)
 	}
-	return GetLatestLog(ctx, conn)
+	return GetLatestLogEntries(ctx, conn, limit)
 }
 
 func (repo *UsersRepo) RedirectGrantAuth(delegate func(context.Context, *sql.DB, string, string) (sql.Result, error)) {
@@ -528,13 +528,13 @@ delete from session where session_key = $1;
 	return result, tx.Commit()
 }
 
-type GetLatestLogResult struct {
+type GetLatestLogEntriesResult struct {
 	Username  string    `json:"username"`
 	EventTime time.Time `json:"eventTime"`
 	Action    string    `json:"action"`
 }
 
-func GetLatestLog(ctx context.Context, conn *sql.DB) ([]*GetLatestLogResult, error) {
+func GetLatestLogEntries(ctx context.Context, conn *sql.DB, limit int) ([]*GetLatestLogEntriesResult, error) {
 	const query = `
 select
     user_id,
@@ -550,7 +550,7 @@ from (
     from user_audit ua
     left join users u on ua.username = u.username
     order by event_time desc
-    limit 100
+    limit $1
 ) segment
 order by event_time;
 `
@@ -559,22 +559,22 @@ order by event_time;
 		ReadOnly:  true,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction in GetLatestLog: %w", err)
+		return nil, fmt.Errorf("failed to begin transaction in GetLatestLogEntries: %w", err)
 	}
 
-	var results []*GetLatestLogResult
-	rows, err := tx.Query(query)
+	var results []*GetLatestLogEntriesResult
+	rows, err := tx.Query(query, limit)
 	if err != nil {
-		rerr := fmt.Errorf("failed to run GetLatestLog: %w", err)
+		rerr := fmt.Errorf("failed to run GetLatestLogEntries: %w", err)
 		return nil, errors.Join(rerr, tx.Rollback())
 	}
 	defer func() {
 		_ = rows.Close()
 	}()
 	for rows.Next() {
-		result := new(GetLatestLogResult)
+		result := new(GetLatestLogEntriesResult)
 		if err := rows.Scan(&result.Username, &result.EventTime, &result.Action); err != nil {
-			rerr := fmt.Errorf("failed to scan row in GetLatestLog: %w", err)
+			rerr := fmt.Errorf("failed to scan row in GetLatestLogEntries: %w", err)
 			return nil, errors.Join(rerr, tx.Rollback())
 		}
 		results = append(results, result)
