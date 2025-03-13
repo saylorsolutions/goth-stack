@@ -65,7 +65,12 @@ func (s *Service) RequireSession() httpx.Middleware {
 			}
 			_, err = s.userRepo.UpdateSessionLiveness(r.Context(), s.pool, sessionKey)
 			if err != nil {
-				s.log.Postf(r.Context(), audit.AnonymousUser, "Failed to update session %s liveness: %v", sessionKey, err)
+				s.log.Postf(r.Context(), details.Username, "Failed to update session %s liveness: %v", sessionKey, err)
+				http.Error(w, "Session management error", 500)
+				return
+			}
+			if err := s.setSessionCookie(w, sessionKey); err != nil {
+				s.log.Postf(r.Context(), details.Username, "Failed to encode session key as cookie value: %v", err)
 				http.Error(w, "Session management error", 500)
 				return
 			}
@@ -102,11 +107,16 @@ func (s *Service) SetAuthenticatedSession(w http.ResponseWriter, r *http.Request
 		return r, err
 	}
 	userDetails.Authz = authz
-	if err := s.SetSecureCookie(w, SessionCookieName, ses.SessionKey, 30*time.Minute); err != nil {
+	if err := s.setSessionCookie(w, ses.SessionKey); err != nil {
+		s.log.Postf(r.Context(), username, "Unable to encode session key as cookie value: %v", err)
 		return r, err
 	}
 	r = setSessionDetails(r, userDetails)
 	return r, nil
+}
+
+func (s *Service) setSessionCookie(w http.ResponseWriter, sessionKey string) error {
+	return s.SetSecureCookie(w, SessionCookieName, sessionKey, 30*time.Minute)
 }
 
 func (s *Service) InvalidateSession(r *http.Request) error {
