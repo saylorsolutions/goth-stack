@@ -1,9 +1,10 @@
 package main
 
 import (
+	"runtime"
+
 	. "github.com/saylorsolutions/modmake"
 	"github.com/saylorsolutions/modmake/pkg/git"
-	"runtime"
 )
 
 const (
@@ -26,7 +27,7 @@ func init() {
 }
 
 func main() {
-	Go().PinLatestV1(23)
+	Go().PinLatestV1(25)
 	b := NewBuild()
 	b.Tools().DependsOnRunner("install-templ", "", Go().Install(F("github.com/a-h/templ/cmd/templ@${templVersion}", versions)))
 	b.Generate().DependsOnRunner("gen-templ", "",

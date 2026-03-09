@@ -4,15 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/gorilla/securecookie"
-	"github.com/saylorsolutions/x/httpx"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"yourapp/feature/audit"
 	"yourapp/feature/model"
+
+	"github.com/gorilla/securecookie"
+	"github.com/saylorsolutions/x/httpx"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestService_RequireSession(t *testing.T) {
@@ -30,9 +31,7 @@ func TestService_RequireSession(t *testing.T) {
 		authenticatedCalls = 0
 		updateSessionLivenessCalls = 0
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	authSvc := testAuthService(t, ctx)
+	authSvc := testAuthService(t)
 	authSvc.userRepo.RedirectGetSessionUser(func(_ context.Context, _ *sql.DB, sessionKey string) (*model.GetSessionUserResult, error) {
 		getSessionCalls++
 		if sessionKey != "abc" {
@@ -150,7 +149,7 @@ func TestService_RequireSession(t *testing.T) {
 	})
 }
 
-func testAuthService(t *testing.T, ctx context.Context) *Service {
+func testAuthService(t *testing.T) *Service {
 	auditLog := audit.NewLogger(nil, audit.StdDelegate(log.Default(), true))
 	auditLog.UserRepo.RedirectInsertAuditLog(func(_ context.Context, _ *sql.DB, user string, msg string) (sql.Result, error) {
 		t.Log("[Audit Log]", user, msg)
@@ -158,7 +157,8 @@ func testAuthService(t *testing.T, ctx context.Context) *Service {
 	})
 	sc := securecookie.New([]byte("abc"), nil)
 	return &Service{
-		log: auditLog,
-		sc:  sc,
+		log:      auditLog,
+		sc:       sc,
+		userRepo: model.NewUsersRepo(nil),
 	}
 }

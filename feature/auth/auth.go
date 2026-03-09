@@ -6,13 +6,14 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"github.com/gorilla/securecookie"
-	"github.com/saylorsolutions/x/env"
-	"github.com/saylorsolutions/x/httpx"
 	"net/http"
 	"strings"
 	"yourapp/feature/audit"
 	"yourapp/feature/model"
+
+	"github.com/gorilla/securecookie"
+	"github.com/saylorsolutions/x/env"
+	"github.com/saylorsolutions/x/httpx"
 )
 
 const (
@@ -40,8 +41,7 @@ func (d Details) HasAuth(auth string) bool {
 type Service struct {
 	log      *audit.Logger
 	sc       *securecookie.SecureCookie
-	pool     *sql.DB
-	userRepo model.UsersRepo
+	userRepo *model.UsersRepo
 }
 
 func initSecureCookie() (*securecookie.SecureCookie, error) {
@@ -67,7 +67,7 @@ func NewAuthService(log *audit.Logger, pool *sql.DB) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Service{log: log, sc: sc, pool: pool}, nil
+	return &Service{log: log, sc: sc, userRepo: model.NewUsersRepo(pool)}, nil
 }
 
 func (s *Service) RequireAuth(auth string) httpx.Middleware {
