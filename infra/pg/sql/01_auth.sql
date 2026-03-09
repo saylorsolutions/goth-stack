@@ -3,7 +3,7 @@ create extension if not exists pgcrypto;
 create table users
 (
     id bigserial not null primary key,
-    username text unique,
+    username text not null unique,
     admin bool default false,
     pass_hash text not null
 );
@@ -69,43 +69,94 @@ create table user_audit
     event_time timestamp not null default current_timestamp
 );
 
+-- session_constraint is used to override default constraints for a session.
+-- Defaults: 30 minute session TTL with no activity, 2-hour max session TTL before requiring re-authentication.
+-- To override, insert a row into session_constraint with new values.
+-- This table should have at most 1 row in it.
+create table session_constraint
+(
+    ses_ttl interval, -- The max amount of time a session lives without activity.
+    max_ttl interval  -- The max amount of time a session can live without requiring re-authentication.
+);
+
+-- sc_ses_ttl returns the max amount of time a session lives without activity.
+-- Defaults to 30 minutes.
+create or replace function sc_ses_ttl() returns interval as $$
+declare r_ses_ttl interval;
+begin
+    select
+        coalesce(ses_ttl, interval '30 minutes')
+    from session_constraint
+    into r_ses_ttl;
+    if r_ses_ttl is null then
+       r_ses_ttl := interval '30 minutes';
+    end if;
+    return r_ses_ttl;
+end;
+$$ language plpgsql;
+
+-- sc_max_ttl returns the max amount of time a session can live without requiring re-authentication.
+-- Defaults to 2 hours.
+create or replace function sc_max_ttl() returns interval as $$
+declare r_max_ttl interval;
+begin
+    select
+        coalesce(max_ttl, interval '2 hours')
+    from session_constraint
+    into r_max_ttl;
+    if r_max_ttl is null then
+        r_max_ttl := interval '2 hours';
+    end if;
+    return r_max_ttl;
+end;
+$$ language plpgsql;
+
 create table session
 (
     id bigserial not null primary key,
     user_id bigint not null,
     session_key text not null default encode(gen_random_bytes(32), 'hex'),
     created_at timestamp not null default current_timestamp,
-    revoked_at timestamp not null default current_timestamp + interval '30 minutes',
-    max_ttl timestamp not null default current_timestamp + interval '2 hours',
+    revoked_at timestamp not null default current_timestamp + sc_ses_ttl(),
+    max_ttl timestamp not null default current_timestamp + sc_max_ttl(),
     foreign key (user_id) references users(id) on delete cascade
 );
 
-create or replace procedure update_session_ttl(p_session_key text) as $$
-declare r_max_ttl timestamp;
-    declare new_revoked timestamp;
-begin
-    select max_ttl
+-- active_session is a view returning only active sessions.
+create view active_session as
+(
+    select *
     from session
-    where session_key = p_session_key
-      and revoked_at > current_timestamp
-      and max_ttl > current_timestamp
-    into r_max_ttl;
-    if r_max_ttl is null then
-        delete from session where session_key = p_session_key;
-        raise exception 'No live sessions exist with this session key';
-    end if;
+    where (
+        revoked_at is null
+        or revoked_at > current_timestamp
+    ) and max_ttl > current_timestamp
+);
 
-    new_revoked := current_timestamp + interval '30 minutes';
-    if new_revoked > r_max_ttl then
-        update session
-        set revoked_at = max_ttl
-        where session_key = p_session_key;
-    else
-        update session
-        set revoked_at = new_revoked
-        where session_key = p_session_key;
-    end if;
-end;
+create or replace procedure update_session_ttl(p_session_key text) as $$
+    declare r_max_ttl timestamp;
+    declare new_revoked timestamp;
+    begin
+        select max_ttl
+        from active_session
+        where session_key = p_session_key
+        into r_max_ttl;
+        if r_max_ttl is null then
+            delete from session where session_key = p_session_key;
+            raise exception 'No live sessions exist with this session key';
+        end if;
+
+        new_revoked := current_timestamp + sc_ses_ttl();
+        if new_revoked > r_max_ttl then
+            update session
+            set revoked_at = max_ttl
+            where session_key = p_session_key;
+        else
+            update session
+            set revoked_at = new_revoked
+            where session_key = p_session_key;
+        end if;
+    end;
 $$ language plpgsql;
 
 create or replace function create_session(p_username text) returns text as $$
@@ -120,10 +171,8 @@ create or replace function create_session(p_username text) returns text as $$
 
         select
             session_key
-        from session s
-        where s.revoked_at > current_timestamp
-            and s.max_ttl > current_timestamp
-            and s.user_id = r_user_id
+        from active_session s
+        where s.user_id = r_user_id
         into r_session_key;
         if r_session_key is not null then
             call update_session_ttl(r_session_key);

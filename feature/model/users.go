@@ -9,6 +9,7 @@ import (
 )
 
 type UsersRepo struct {
+	db                    *sql.DB
 	createUser            func(context.Context, *sql.DB, string, string) (sql.Result, error)
 	updatePassword        func(context.Context, *sql.DB, string, string) (sql.Result, error)
 	checkPassword         func(context.Context, *sql.DB, string, string) (*CheckPasswordResult, error)
@@ -28,215 +29,291 @@ type UsersRepo struct {
 	getAuthorizations     func(context.Context, *sql.DB) ([]*GetAuthorizationsResult, error)
 	userAuth              func(context.Context, *sql.DB, uint64) ([]*UserAuthResult, error)
 	userAuthNotGranted    func(context.Context, *sql.DB, string) ([]*UserAuthNotGrantedResult, error)
+	setSessionValue       func(context.Context, *sql.DB, string, string, string) (sql.Result, error)
+	getSessionValue       func(context.Context, *sql.DB, string, string) (*GetSessionValueResult, error)
+}
+
+func NewUsersRepo(db *sql.DB) *UsersRepo {
+	return &UsersRepo{
+		db: db,
+	}
+}
+
+func (repo *UsersRepo) Begin() (*sql.Tx, error) {
+	return repo.db.Begin()
+}
+
+func (repo *UsersRepo) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
+	return repo.db.BeginTx(ctx, opts)
+}
+
+func (repo *UsersRepo) WithTx(ctx context.Context, do func(tx *sql.Tx) error, opts ...*sql.TxOptions) error {
+	var (
+		opt *sql.TxOptions
+		tx  *sql.Tx
+		err error
+	)
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+	if opt == nil {
+		tx, err = repo.Begin()
+		if err != nil {
+			return err
+		}
+	} else {
+		tx, err = repo.BeginTx(ctx, opt)
+		if err != nil {
+			return err
+		}
+	}
+	if err := do(tx); err != nil {
+		return errors.Join(err, tx.Rollback())
+	}
+	return tx.Commit()
+}
+
+func (repo *UsersRepo) WithReadTx(ctx context.Context, do func(tx *sql.Tx) error) error {
+	return repo.WithTx(ctx, do, &sql.TxOptions{
+		ReadOnly: true,
+	})
+}
+
+func (repo *UsersRepo) WithWriteTx(ctx context.Context, do func(tx *sql.Tx) error) error {
+	return repo.WithTx(ctx, do, &sql.TxOptions{
+		ReadOnly: false,
+	})
 }
 
 func (repo *UsersRepo) RedirectCreateUser(delegate func(context.Context, *sql.DB, string, string) (sql.Result, error)) {
 	repo.createUser = delegate
 }
 
-func (repo *UsersRepo) CreateUser(ctx context.Context, conn *sql.DB, username string, password string) (sql.Result, error) {
+func (repo *UsersRepo) CreateUser(ctx context.Context, username string, password string) (sql.Result, error) {
 	if repo.createUser != nil {
-		return repo.createUser(ctx, conn, username, password)
+		return repo.createUser(ctx, repo.db, username, password)
 	}
-	return CreateUser(ctx, conn, username, password)
+	return CreateUser(ctx, repo.db, username, password)
 }
 
 func (repo *UsersRepo) RedirectUpdatePassword(delegate func(context.Context, *sql.DB, string, string) (sql.Result, error)) {
 	repo.updatePassword = delegate
 }
 
-func (repo *UsersRepo) UpdatePassword(ctx context.Context, conn *sql.DB, username string, password string) (sql.Result, error) {
+func (repo *UsersRepo) UpdatePassword(ctx context.Context, username string, password string) (sql.Result, error) {
 	if repo.updatePassword != nil {
-		return repo.updatePassword(ctx, conn, username, password)
+		return repo.updatePassword(ctx, repo.db, username, password)
 	}
-	return UpdatePassword(ctx, conn, username, password)
+	return UpdatePassword(ctx, repo.db, username, password)
 }
 
 func (repo *UsersRepo) RedirectCheckPassword(delegate func(context.Context, *sql.DB, string, string) (*CheckPasswordResult, error)) {
 	repo.checkPassword = delegate
 }
 
-func (repo *UsersRepo) CheckPassword(ctx context.Context, conn *sql.DB, username string, password string) (*CheckPasswordResult, error) {
+func (repo *UsersRepo) CheckPassword(ctx context.Context, username string, password string) (*CheckPasswordResult, error) {
 	if repo.checkPassword != nil {
-		return repo.checkPassword(ctx, conn, username, password)
+		return repo.checkPassword(ctx, repo.db, username, password)
 	}
-	return CheckPassword(ctx, conn, username, password)
+	return CheckPassword(ctx, repo.db, username, password)
 }
 
 func (repo *UsersRepo) RedirectGetUser(delegate func(context.Context, *sql.DB, string) (*GetUserResult, error)) {
 	repo.getUser = delegate
 }
 
-func (repo *UsersRepo) GetUser(ctx context.Context, conn *sql.DB, username string) (*GetUserResult, error) {
+func (repo *UsersRepo) GetUser(ctx context.Context, username string) (*GetUserResult, error) {
 	if repo.getUser != nil {
-		return repo.getUser(ctx, conn, username)
+		return repo.getUser(ctx, repo.db, username)
 	}
-	return GetUser(ctx, conn, username)
+	return GetUser(ctx, repo.db, username)
 }
 
 func (repo *UsersRepo) RedirectGetAllUsers(delegate func(context.Context, *sql.DB) ([]*GetAllUsersResult, error)) {
 	repo.getAllUsers = delegate
 }
 
-func (repo *UsersRepo) GetAllUsers(ctx context.Context, conn *sql.DB) ([]*GetAllUsersResult, error) {
+func (repo *UsersRepo) GetAllUsers(ctx context.Context) ([]*GetAllUsersResult, error) {
 	if repo.getAllUsers != nil {
-		return repo.getAllUsers(ctx, conn)
+		return repo.getAllUsers(ctx, repo.db)
 	}
-	return GetAllUsers(ctx, conn)
+	return GetAllUsers(ctx, repo.db)
 }
 
 func (repo *UsersRepo) RedirectLockUser(delegate func(context.Context, *sql.DB, string) (sql.Result, error)) {
 	repo.lockUser = delegate
 }
 
-func (repo *UsersRepo) LockUser(ctx context.Context, conn *sql.DB, username string) (sql.Result, error) {
+func (repo *UsersRepo) LockUser(ctx context.Context, username string) (sql.Result, error) {
 	if repo.lockUser != nil {
-		return repo.lockUser(ctx, conn, username)
+		return repo.lockUser(ctx, repo.db, username)
 	}
-	return LockUser(ctx, conn, username)
+	return LockUser(ctx, repo.db, username)
 }
 
 func (repo *UsersRepo) RedirectDeleteUser(delegate func(context.Context, *sql.DB, string) (sql.Result, error)) {
 	repo.deleteUser = delegate
 }
 
-func (repo *UsersRepo) DeleteUser(ctx context.Context, conn *sql.DB, username string) (sql.Result, error) {
+func (repo *UsersRepo) DeleteUser(ctx context.Context, username string) (sql.Result, error) {
 	if repo.deleteUser != nil {
-		return repo.deleteUser(ctx, conn, username)
+		return repo.deleteUser(ctx, repo.db, username)
 	}
-	return DeleteUser(ctx, conn, username)
+	return DeleteUser(ctx, repo.db, username)
 }
 
 func (repo *UsersRepo) RedirectElevateToAdmin(delegate func(context.Context, *sql.DB, string) (sql.Result, error)) {
 	repo.elevateToAdmin = delegate
 }
 
-func (repo *UsersRepo) ElevateToAdmin(ctx context.Context, conn *sql.DB, username string) (sql.Result, error) {
+func (repo *UsersRepo) ElevateToAdmin(ctx context.Context, username string) (sql.Result, error) {
 	if repo.elevateToAdmin != nil {
-		return repo.elevateToAdmin(ctx, conn, username)
+		return repo.elevateToAdmin(ctx, repo.db, username)
 	}
-	return ElevateToAdmin(ctx, conn, username)
+	return ElevateToAdmin(ctx, repo.db, username)
 }
 
 func (repo *UsersRepo) RedirectInsertAuditLog(delegate func(context.Context, *sql.DB, string, string) (sql.Result, error)) {
 	repo.insertAuditLog = delegate
 }
 
-func (repo *UsersRepo) InsertAuditLog(ctx context.Context, conn *sql.DB, username string, message string) (sql.Result, error) {
+func (repo *UsersRepo) InsertAuditLog(ctx context.Context, username string, message string) (sql.Result, error) {
 	if repo.insertAuditLog != nil {
-		return repo.insertAuditLog(ctx, conn, username, message)
+		return repo.insertAuditLog(ctx, repo.db, username, message)
 	}
-	return InsertAuditLog(ctx, conn, username, message)
+	return InsertAuditLog(ctx, repo.db, username, message)
 }
 
 func (repo *UsersRepo) RedirectCreateSession(delegate func(context.Context, *sql.DB, string) (*CreateSessionResult, error)) {
 	repo.createSession = delegate
 }
 
-func (repo *UsersRepo) CreateSession(ctx context.Context, conn *sql.DB, username string) (*CreateSessionResult, error) {
+func (repo *UsersRepo) CreateSession(ctx context.Context, username string) (*CreateSessionResult, error) {
 	if repo.createSession != nil {
-		return repo.createSession(ctx, conn, username)
+		return repo.createSession(ctx, repo.db, username)
 	}
-	return CreateSession(ctx, conn, username)
+	return CreateSession(ctx, repo.db, username)
 }
 
 func (repo *UsersRepo) RedirectUpdateSessionLiveness(delegate func(context.Context, *sql.DB, string) (sql.Result, error)) {
 	repo.updateSessionLiveness = delegate
 }
 
-func (repo *UsersRepo) UpdateSessionLiveness(ctx context.Context, conn *sql.DB, sessionKey string) (sql.Result, error) {
+func (repo *UsersRepo) UpdateSessionLiveness(ctx context.Context, sessionKey string) (sql.Result, error) {
 	if repo.updateSessionLiveness != nil {
-		return repo.updateSessionLiveness(ctx, conn, sessionKey)
+		return repo.updateSessionLiveness(ctx, repo.db, sessionKey)
 	}
-	return UpdateSessionLiveness(ctx, conn, sessionKey)
+	return UpdateSessionLiveness(ctx, repo.db, sessionKey)
 }
 
 func (repo *UsersRepo) RedirectGetSessionUser(delegate func(context.Context, *sql.DB, string) (*GetSessionUserResult, error)) {
 	repo.getSessionUser = delegate
 }
 
-func (repo *UsersRepo) GetSessionUser(ctx context.Context, conn *sql.DB, sessionKey string) (*GetSessionUserResult, error) {
+func (repo *UsersRepo) GetSessionUser(ctx context.Context, sessionKey string) (*GetSessionUserResult, error) {
 	if repo.getSessionUser != nil {
-		return repo.getSessionUser(ctx, conn, sessionKey)
+		return repo.getSessionUser(ctx, repo.db, sessionKey)
 	}
-	return GetSessionUser(ctx, conn, sessionKey)
+	return GetSessionUser(ctx, repo.db, sessionKey)
 }
 
 func (repo *UsersRepo) RedirectInvalidateSession(delegate func(context.Context, *sql.DB, string) (sql.Result, error)) {
 	repo.invalidateSession = delegate
 }
 
-func (repo *UsersRepo) InvalidateSession(ctx context.Context, conn *sql.DB, sessionKey string) (sql.Result, error) {
+func (repo *UsersRepo) InvalidateSession(ctx context.Context, sessionKey string) (sql.Result, error) {
 	if repo.invalidateSession != nil {
-		return repo.invalidateSession(ctx, conn, sessionKey)
+		return repo.invalidateSession(ctx, repo.db, sessionKey)
 	}
-	return InvalidateSession(ctx, conn, sessionKey)
+	return InvalidateSession(ctx, repo.db, sessionKey)
 }
 
 func (repo *UsersRepo) RedirectGetLatestLogEntries(delegate func(context.Context, *sql.DB, int) ([]*GetLatestLogEntriesResult, error)) {
 	repo.getLatestLogEntries = delegate
 }
 
-func (repo *UsersRepo) GetLatestLogEntries(ctx context.Context, conn *sql.DB, limit int) ([]*GetLatestLogEntriesResult, error) {
+func (repo *UsersRepo) GetLatestLogEntries(ctx context.Context, limit int) ([]*GetLatestLogEntriesResult, error) {
 	if repo.getLatestLogEntries != nil {
-		return repo.getLatestLogEntries(ctx, conn, limit)
+		return repo.getLatestLogEntries(ctx, repo.db, limit)
 	}
-	return GetLatestLogEntries(ctx, conn, limit)
+	return GetLatestLogEntries(ctx, repo.db, limit)
 }
 
 func (repo *UsersRepo) RedirectGrantAuth(delegate func(context.Context, *sql.DB, string, string) (sql.Result, error)) {
 	repo.grantAuth = delegate
 }
 
-func (repo *UsersRepo) GrantAuth(ctx context.Context, conn *sql.DB, userID string, authID string) (sql.Result, error) {
+func (repo *UsersRepo) GrantAuth(ctx context.Context, userID string, authID string) (sql.Result, error) {
 	if repo.grantAuth != nil {
-		return repo.grantAuth(ctx, conn, userID, authID)
+		return repo.grantAuth(ctx, repo.db, userID, authID)
 	}
-	return GrantAuth(ctx, conn, userID, authID)
+	return GrantAuth(ctx, repo.db, userID, authID)
 }
 
 func (repo *UsersRepo) RedirectRevokeAuth(delegate func(context.Context, *sql.DB, string, string) (sql.Result, error)) {
 	repo.revokeAuth = delegate
 }
 
-func (repo *UsersRepo) RevokeAuth(ctx context.Context, conn *sql.DB, userID string, authID string) (sql.Result, error) {
+func (repo *UsersRepo) RevokeAuth(ctx context.Context, userID string, authID string) (sql.Result, error) {
 	if repo.revokeAuth != nil {
-		return repo.revokeAuth(ctx, conn, userID, authID)
+		return repo.revokeAuth(ctx, repo.db, userID, authID)
 	}
-	return RevokeAuth(ctx, conn, userID, authID)
+	return RevokeAuth(ctx, repo.db, userID, authID)
 }
 
 func (repo *UsersRepo) RedirectGetAuthorizations(delegate func(context.Context, *sql.DB) ([]*GetAuthorizationsResult, error)) {
 	repo.getAuthorizations = delegate
 }
 
-func (repo *UsersRepo) GetAuthorizations(ctx context.Context, conn *sql.DB) ([]*GetAuthorizationsResult, error) {
+func (repo *UsersRepo) GetAuthorizations(ctx context.Context) ([]*GetAuthorizationsResult, error) {
 	if repo.getAuthorizations != nil {
-		return repo.getAuthorizations(ctx, conn)
+		return repo.getAuthorizations(ctx, repo.db)
 	}
-	return GetAuthorizations(ctx, conn)
+	return GetAuthorizations(ctx, repo.db)
 }
 
 func (repo *UsersRepo) RedirectUserAuth(delegate func(context.Context, *sql.DB, uint64) ([]*UserAuthResult, error)) {
 	repo.userAuth = delegate
 }
 
-func (repo *UsersRepo) UserAuth(ctx context.Context, conn *sql.DB, userID uint64) ([]*UserAuthResult, error) {
+func (repo *UsersRepo) UserAuth(ctx context.Context, userID uint64) ([]*UserAuthResult, error) {
 	if repo.userAuth != nil {
-		return repo.userAuth(ctx, conn, userID)
+		return repo.userAuth(ctx, repo.db, userID)
 	}
-	return UserAuth(ctx, conn, userID)
+	return UserAuth(ctx, repo.db, userID)
 }
 
 func (repo *UsersRepo) RedirectUserAuthNotGranted(delegate func(context.Context, *sql.DB, string) ([]*UserAuthNotGrantedResult, error)) {
 	repo.userAuthNotGranted = delegate
 }
 
-func (repo *UsersRepo) UserAuthNotGranted(ctx context.Context, conn *sql.DB, username string) ([]*UserAuthNotGrantedResult, error) {
+func (repo *UsersRepo) UserAuthNotGranted(ctx context.Context, username string) ([]*UserAuthNotGrantedResult, error) {
 	if repo.userAuthNotGranted != nil {
-		return repo.userAuthNotGranted(ctx, conn, username)
+		return repo.userAuthNotGranted(ctx, repo.db, username)
 	}
-	return UserAuthNotGranted(ctx, conn, username)
+	return UserAuthNotGranted(ctx, repo.db, username)
+}
+
+func (repo *UsersRepo) RedirectSetSessionValue(delegate func(context.Context, *sql.DB, string, string, string) (sql.Result, error)) {
+	repo.setSessionValue = delegate
+}
+
+func (repo *UsersRepo) SetSessionValue(ctx context.Context, sessionKey string, key string, val string) (sql.Result, error) {
+	if repo.setSessionValue != nil {
+		return repo.setSessionValue(ctx, repo.db, sessionKey, key, val)
+	}
+	return SetSessionValue(ctx, repo.db, sessionKey, key, val)
+}
+
+func (repo *UsersRepo) RedirectGetSessionValue(delegate func(context.Context, *sql.DB, string, string) (*GetSessionValueResult, error)) {
+	repo.getSessionValue = delegate
+}
+
+func (repo *UsersRepo) GetSessionValue(ctx context.Context, sessionKey string, key string) (*GetSessionValueResult, error) {
+	if repo.getSessionValue != nil {
+		return repo.getSessionValue(ctx, repo.db, sessionKey, key)
+	}
+	return GetSessionValue(ctx, repo.db, sessionKey, key)
 }
 
 func CreateUser(ctx context.Context, conn *sql.DB, username string, password string) (sql.Result, error) {
@@ -298,6 +375,9 @@ select check_passwd($1, $2);
 	var result CheckPasswordResult
 	err = tx.QueryRow(query, username, password).Scan(&result.Matches)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
 		rerr := fmt.Errorf("failed to run CheckPassword: %w", err)
 		return nil, errors.Join(rerr, tx.Rollback())
 	}
@@ -325,6 +405,9 @@ select id, username, admin from users where username = $1;
 	var result GetUserResult
 	err = tx.QueryRow(query, username).Scan(&result.UserID, &result.Username, &result.Admin)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
 		rerr := fmt.Errorf("failed to run GetUser: %w", err)
 		return nil, errors.Join(rerr, tx.Rollback())
 	}
@@ -371,14 +454,22 @@ select id, username, admin from users;
 
 func LockUser(ctx context.Context, conn *sql.DB, username string) (sql.Result, error) {
 	const query = `
---- @write-tx
 update users set pass_hash = 'locked' where username = $1;
 `
-	result, err := conn.ExecContext(ctx, query, username)
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelDefault,
+		ReadOnly:  false,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to run LockUser: %w", err)
+		return nil, fmt.Errorf("failed to begin transaction in LockUser: %w", err)
 	}
-	return result, nil
+
+	result, err := tx.Exec(query, username)
+	if err != nil {
+		rerr := fmt.Errorf("failed to run LockUser: %w", err)
+		return nil, errors.Join(rerr, tx.Rollback())
+	}
+	return result, tx.Commit()
 }
 
 func DeleteUser(ctx context.Context, conn *sql.DB, username string) (sql.Result, error) {
@@ -451,6 +542,9 @@ select create_session($1);
 	var result CreateSessionResult
 	err = tx.QueryRow(query, username).Scan(&result.SessionKey)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
 		rerr := fmt.Errorf("failed to run CreateSession: %w", err)
 		return nil, errors.Join(rerr, tx.Rollback())
 	}
@@ -502,6 +596,9 @@ where s.session_key = $1
 	var result GetSessionUserResult
 	err = tx.QueryRow(query, sessionKey).Scan(&result.UserID, &result.Username, &result.Admin)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
 		rerr := fmt.Errorf("failed to run GetSessionUser: %w", err)
 		return nil, errors.Join(rerr, tx.Rollback())
 	}
@@ -741,4 +838,52 @@ where id not in (select auth_id from auth_grants where username = $1)
 		results = append(results, result)
 	}
 	return results, tx.Commit()
+}
+
+func SetSessionValue(ctx context.Context, conn *sql.DB, sessionKey string, key string, val string) (sql.Result, error) {
+	const query = `
+call seskv_set($1, $2, $3);
+`
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelDefault,
+		ReadOnly:  false,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction in SetSessionValue: %w", err)
+	}
+
+	result, err := tx.Exec(query, sessionKey, key, val)
+	if err != nil {
+		rerr := fmt.Errorf("failed to run SetSessionValue: %w", err)
+		return nil, errors.Join(rerr, tx.Rollback())
+	}
+	return result, tx.Commit()
+}
+
+type GetSessionValueResult struct {
+	Val string `json:"val"`
+}
+
+func GetSessionValue(ctx context.Context, conn *sql.DB, sessionKey string, key string) (*GetSessionValueResult, error) {
+	const query = `
+select seskv_get($1, $2);
+`
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelDefault,
+		ReadOnly:  true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction in GetSessionValue: %w", err)
+	}
+
+	var result GetSessionValueResult
+	err = tx.QueryRow(query, sessionKey, key).Scan(&result.Val)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+		rerr := fmt.Errorf("failed to run GetSessionValue: %w", err)
+		return nil, errors.Join(rerr, tx.Rollback())
+	}
+	return &result, tx.Commit()
 }

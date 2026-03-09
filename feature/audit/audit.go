@@ -13,17 +13,17 @@ const (
 
 type Logger struct {
 	delegate LogDelegate
-	pool     *sql.DB
 	UserRepo model.UsersRepo
 }
 
 func NewLogger(pool *sql.DB, delegate LogDelegate) *Logger {
-	return &Logger{delegate: delegate, pool: pool}
+	repo := model.NewUsersRepo(pool)
+	return &Logger{delegate: delegate, UserRepo: *repo}
 }
 
 func (l *Logger) Post(ctx context.Context, username, action string) {
 	l.delegate.Debug(action)
-	_, err := l.UserRepo.InsertAuditLog(ctx, l.pool, username, action)
+	_, err := l.UserRepo.InsertAuditLog(ctx, username, action)
 	if err != nil {
 		l.delegate.Error("Failed to insert into audit log: %w", err)
 	}
